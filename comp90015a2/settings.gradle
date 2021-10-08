@@ -1,5 +1,4 @@
-rootProject.name = 'comp90015a1'
-include 'client'
+rootProject.name = 'comp90015a2'
+include 'chatpeer'
 include 'base'
-include 'server'
 

@@ -17,7 +17,7 @@ public class Manager {
     private volatile HashMap<Server.ChatConnection, Guest> guestHashMap;
     private volatile HashMap<Guest, Server.ChatConnection> connectionHashMap;
     private volatile HashMap<String, ChatRoom> roomHashMap;
-    private volatile Integer count;
+    private volatile String nextIdentity;
 
     public Manager() {
         this.roomList = new ArrayList<>();
@@ -28,7 +28,7 @@ public class Manager {
         this.connectionHashMap = new HashMap<>();
         this.roomHashMap = new HashMap<>();
         this.roomHashMap.put("MainHall", hall);
-        this.count = 1;
+        this.nextIdentity = "guest1";
     }
 
     public ArrayList<BroadcastInfo> Analyze(String s, Server.ChatConnection connection){
@@ -96,14 +96,33 @@ public class Manager {
         return infoList;
     }
 
+    public void CheckIdentity(){
+        int count = 1;
+        while(true){
+            String identity = "guest" + count;
+            boolean flag = true;
+            for(int i=0;i<this.identityList.size();i++){
+                if(this.identityList.get(i).equals(identity)){
+                    flag = false;
+                    break;
+                }
+            }
+            if(flag){
+                this.nextIdentity = identity;
+                break;
+            }
+            count += 1;
+        }
+    }
+
     private synchronized ArrayList<BroadcastInfo> NewIdentity(Guest g, Server.ChatConnection connection){
         ArrayList<BroadcastInfo> infoList = new ArrayList<>();
-        g.setIdentity("guest" + this.count.toString());
-        this.count += 1;
+        g.setIdentity(this.nextIdentity);
         g.setCurrentRoom("");
         this.connectionHashMap.put(g, connection);
         this.guestHashMap.put(connection, g);
         this.identityList.add(g.getIdentity());
+        this.CheckIdentity();
         NewIdentity ni = new NewIdentity();
         ni.setType(MessageType.NEWIDENTITY.getType());
         ni.setFormer("");
@@ -127,6 +146,7 @@ public class Manager {
             this.identityList.remove(g.getIdentity());
             g.setIdentity(identity);
             this.identityList.add(identity);
+            this.CheckIdentity();
             ni.setIdentity(identity);
             System.out.printf("%s is now %s\n",ni.getFormer(),ni.getIdentity());
             ArrayList<Guest> guestsToSend = this.roomHashMap.get(g.getCurrentRoom()).getMembers();
@@ -389,6 +409,7 @@ public class Manager {
         }
         this.roomHashMap.get(g.getCurrentRoom()).deleteMember(g);
         this.identityList.remove(g.getIdentity());
+        this.CheckIdentity();
         this.connectionHashMap.remove(g);
         infoList.add(info);
         return infoList;

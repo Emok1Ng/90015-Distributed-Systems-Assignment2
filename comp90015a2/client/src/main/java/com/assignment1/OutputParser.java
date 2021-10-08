@@ -27,7 +27,7 @@ public class OutputParser {
         String[] parts = s.split(" ");
         String command = parts[0];
         String arg1  = "";
-        String identityPattern = "[a-zA-Z0-9]{3,16}";
+        String identityPattern = "[a-zA-Z]{1}[a-zA-Z0-9]{2,15}";
         String defaultIdentityPattern = "guest[0-9]{0,11}";
         String roomPattern = "^[a-zA-Z]{1}[a-zA-Z0-9]{2,31}";
         if(command.equals(Command.IDENTITYCHANGE.getCommand()) && parts.length >= 2){

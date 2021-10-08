@@ -17,7 +17,6 @@ public class InputParser {
 
     public synchronized boolean print(String s, int status, String opearingRoom){
         JSONObject json = JSON.parseObject(s);
-        //System.out.printf(json.toJSONString());
         String type = json.get("type").toString();
         if(type.equals(MessageType.MESSAGE.getType())){
             String speaker = json.get("identity").toString();

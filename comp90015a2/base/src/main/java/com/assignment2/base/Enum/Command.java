@@ -1,9 +1,14 @@
 package com.assignment2.base.Enum;
 
 public enum Command {
-    IDENTITYCHANGE("identitychange"),JOIN("join"),
-    WHO("who"),LIST("list"),CREATEROOM("createroom"),
-    DELETEROOM("delete"),QUIT("quit");
+    //local
+    CREATEROOM("createroom"),DELETEROOM("delete"),
+    KICK("kick"),QUIT("quit"),
+    SEARCHNETWORK("searchnetwork"),CONNECT("connect"),HELP("help"),
+
+    //remote
+    JOIN("join"),WHO("who"),LIST("list"),
+    LISTNEIGHBORS("listneighbors");
 
     private String command;
 

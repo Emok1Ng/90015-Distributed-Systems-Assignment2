@@ -6,10 +6,8 @@ public class Guest {
 
     private String identity;
     private String currentRoom;
-    private ArrayList<String> ownership;
 
     public Guest() {
-        this.ownership = new ArrayList<>();
     }
 
     public String getIdentity() {
@@ -26,18 +24,6 @@ public class Guest {
 
     public void setCurrentRoom(String currentRoom) {
         this.currentRoom = currentRoom;
-    }
-
-    public ArrayList<String> getOwnership() {
-        return ownership;
-    }
-
-    public void addOwnership(String chatRoom){
-        this.ownership.add(chatRoom);
-    }
-
-    public void deleteOwnership(String chatRoom){
-        this.ownership.remove(chatRoom);
     }
 
 }

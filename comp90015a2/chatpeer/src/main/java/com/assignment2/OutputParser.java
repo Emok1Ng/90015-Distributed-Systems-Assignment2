@@ -27,21 +27,9 @@ public class OutputParser {
         String[] parts = s.split(" ");
         String command = parts[0];
         String arg1  = "";
-        String identityPattern = "[a-zA-Z]{1}[a-zA-Z0-9]{2,15}";
-        String defaultIdentityPattern = "guest[0-9]{0,11}";
         String roomPattern = "^[a-zA-Z]{1}[a-zA-Z0-9]{2,31}";
-        if(command.equals(Command.IDENTITYCHANGE.getCommand()) && parts.length >= 2){
-            arg1 = parts[1];
-            if(!Pattern.matches(identityPattern, arg1) ||
-                    Pattern.matches(defaultIdentityPattern, arg1)){
-                return null;
-            }
-            IdentityChange ic = new IdentityChange();
-            ic.setType(Command.IDENTITYCHANGE.getCommand());
-            ic.setIdentity(arg1);
-            return JSON.toJSONString(ic);
-        }
-        else if(command.equals(Command.JOIN.getCommand()) && parts.length >= 2){
+        //remote
+        if(command.equals(Command.JOIN.getCommand()) && parts.length >= 2){
             arg1 = parts[1];
             if(!Pattern.matches(roomPattern, arg1)){
                 return null;
@@ -56,6 +44,26 @@ public class OutputParser {
             l.setType(Command.LIST.getCommand());
             return JSON.toJSONString(l);
         }
+        else if(command.equals(Command.WHO.getCommand()) && parts.length >= 2){
+            arg1 = parts[1];
+            if(!Pattern.matches(roomPattern, arg1)){
+                return null;
+            }
+            Who w = new Who();
+            w.setType(Command.WHO.getCommand());
+            w.setRoomid(arg1);
+            return JSON.toJSONString(w);
+        }
+        else if(command.equals(Command.LISTNEIGHBORS.getCommand())){
+            //todo
+            return null;
+        }
+        else if(command.equals(Command.QUIT.getCommand())){
+            Quit q = new Quit();
+            q.setType(Command.QUIT.getCommand());
+            return JSON.toJSONString(q);
+        }
+        //local
         else if(command.equals(Command.CREATEROOM.getCommand()) && parts.length >= 2){
             arg1 = parts[1];
             if(!Pattern.matches(roomPattern, arg1)){
@@ -77,20 +85,21 @@ public class OutputParser {
             d.setRoomid(arg1);
             return JSON.toJSONString(d);
         }
-        else if(command.equals(Command.WHO.getCommand()) && parts.length >= 2){
-            arg1 = parts[1];
-            if(!Pattern.matches(roomPattern, arg1)){
-                return null;
-            }
-            Who w = new Who();
-            w.setType(Command.WHO.getCommand());
-            w.setRoomid(arg1);
-            return JSON.toJSONString(w);
+        else if(command.equals(Command.KICK.getCommand())){
+            //todo
+            return null;
         }
-        else if(command.equals(Command.QUIT.getCommand())){
-            Quit q = new Quit();
-            q.setType(Command.QUIT.getCommand());
-            return JSON.toJSONString(q);
+        else if(command.equals(Command.SEARCHNETWORK.getCommand())){
+            //todo
+            return null;
+        }
+        else if(command.equals(Command.CONNECT.getCommand())){
+            //todo
+            return null;
+        }
+        else if(command.equals(Command.HELP.getCommand())){
+            //todo
+            return null;
         }
         else{
             return null;

@@ -17,19 +17,12 @@ public class ChatPeer {
 
     private int iPort = 4444;
     private int pPort = 4444;
-    private boolean alive;
     private String hostName;
-    public volatile int status;
-    public volatile boolean senderAlive;
-    public volatile boolean receiverAlive;
-    public volatile String roomid;
 
     private final Manager manager = new Manager();
 
     public ChatPeer(int pPort, int iPort) {
-        status = 0;
-        senderAlive = false;
-        receiverAlive = false;
+        this.hostName = "127.0.0.1";
         this.pPort = pPort;
         this.iPort = iPort;
     }
@@ -60,20 +53,19 @@ public class ChatPeer {
         ServerSocket serverSocket;
         ExecutorService threadpool = Executors.newFixedThreadPool(50);
         try {
-            System.out.println("[Server]:Waiting for connection......");
+            System.out.println("[LocalChatPeer]:Waiting for connection......");
             serverSocket = new ServerSocket((pPort));
-            System.out.printf("[Server]:Listening on port %d\n", pPort);
-            alive = true;
+            System.out.printf("[LocalChatPeer]:Listening on port %d\n", pPort);
             Reader reader = new Reader();
             threadpool.execute(reader);
-            while(alive){
+            while(true){
                 Socket socket = serverSocket.accept();
                 ChatConnection connection = new ChatConnection(socket);
                 threadpool.execute(connection);
             }
         }
         catch(Exception e){
-            System.out.println("server closed");
+            System.out.println("[LocalChatPeer]: Closed......");
         }
     }
 
@@ -93,7 +85,7 @@ public class ChatPeer {
         public void run() {
             connection_alive = true;
             broadCast(manager.Analyze("",this));
-            broadCast(manager.Analyze("{\"type\":\"join\",\"roomid\":\"MainHall\"}",this));
+            broadCast(manager.Analyze("{\"type\":\"join\",\"roomid\":\"\"}",this));
             while (connection_alive) {
                 try{
                     String input  = reader.readLine();
@@ -143,29 +135,18 @@ public class ChatPeer {
         }
         @Override
         public void run() {
-            senderAlive = true;
-            while (senderAlive) {
+            boolean readerAlive = true;
+            while (readerAlive) {
                 try {
                     String message = keyboard.readLine();
                     String toSend = outputParser.toJSON(message);
                     if (toSend != null) {
-                        if(JSONObject.parseObject(toSend).get("type").equals(Command.CREATEROOM.getCommand())){
-                            status = 1;
-                            roomid = JSONObject.parseObject(toSend).get("roomid").toString();
-                        }
-                        else if(JSONObject.parseObject(toSend).get("type").equals(Command.DELETEROOM.getCommand())){
-                            status = 2;
-                            roomid = JSONObject.parseObject(toSend).get("roomid").toString();
-                        }
-                        else if(JSONObject.parseObject(toSend).get("type").equals(Command.QUIT.getCommand())){
-                            senderAlive = false;
-                        }
-                        //todo
+                        broadCast(manager.Analyze(toSend,null));
                     } else {
                         System.out.println("[ERROR]Unable to send message due to Invalid command/Lack of arguments/Invalid identity(names begin with 'guest' followed by numbers are preserved) or roomid");
                     }
                 } catch (Exception e) {
-                    senderAlive = false;
+                    readerAlive = false;
                 }
             }
         }

@@ -56,21 +56,6 @@ public class InputParser {
                 System.out.printf("Room %s deleted\n",opearingRoom);
             }
         }
-        else if(type.equals(MessageType.NEWIDENTITY.getType())){
-            String former = json.get("former").toString();
-            String identity = json.get("identity").toString();
-            if(!former.equals(identity)){
-                if(former.equals(this.identity)){
-                    this.identity = identity;
-                }
-                if(!former.equals("")){
-                    System.out.printf("%s is now %s\n",former,identity);
-                }
-            }
-            else{
-                System.out.println("Requested identity invalid or in use");
-            }
-        }
         else if(type.equals(MessageType.ROOMCHANGE.getType())){
             String former = json.get("former").toString();
             String roomid = json.get("roomid").toString();

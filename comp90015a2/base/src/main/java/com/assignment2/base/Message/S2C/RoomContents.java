@@ -7,7 +7,6 @@ import java.util.ArrayList;
 public class RoomContents extends Room {
 
     private ArrayList<String> identities;
-    private String owner;
 
     public ArrayList<String> getIdentities() {
         return identities;
@@ -17,11 +16,4 @@ public class RoomContents extends Room {
         this.identities = identities;
     }
 
-    public String getOwner() {
-        return owner;
-    }
-
-    public void setOwner(String owner) {
-        this.owner = owner;
-    }
 }

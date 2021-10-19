@@ -40,11 +40,15 @@ public class ChatPeer {
     }
 
     private synchronized void broadCast(ArrayList<Manager.BroadcastInfo> infoList) {
-        for(int i=0;i<infoList.size();i++){
-            Manager.BroadcastInfo info = infoList.get(i);
-            String content = info.getContent();
-            for(int j=0;j<info.getConnections().size();j++){
-                info.getConnections().get(j).sendMessage(content);
+        if(infoList != null){
+            for(int i=0;i<infoList.size();i++){
+                Manager.BroadcastInfo info = infoList.get(i);
+                String content = info.getContent();
+                for(int j=0;j<info.getConnections().size();j++){
+                    if(info.getConnections().get(j) != null){
+                        info.getConnections().get(j).sendMessage(content);
+                    }
+                }
             }
         }
     }
@@ -142,7 +146,7 @@ public class ChatPeer {
                     if (toSend != null) {
                         broadCast(manager.Analyze(toSend,null));
                     } else {
-                        System.out.println("[ERROR]Unable to send message due to Invalid command/Lack of arguments/Invalid identity(names begin with 'guest' followed by numbers are preserved) or roomid");
+                        System.out.println("[ERROR]Unable to process message due to Invalid command/Lack of arguments/Invalid roomid");
                     }
                 } catch (Exception e) {
                     readerAlive = false;

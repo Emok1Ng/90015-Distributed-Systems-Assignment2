@@ -6,7 +6,6 @@ import com.assignment2.base.Enum.MessageType;
 import com.assignment2.base.Message.C2S.*;
 import com.assignment2.base.Message.S2C.ListNeighbors;
 
-import java.net.ConnectException;
 import java.util.regex.Pattern;
 
 public class OutputParser {
@@ -88,8 +87,10 @@ public class OutputParser {
             return JSON.toJSONString(d);
         }
         else if(command.equals(Command.KICK.getCommand())){
+            arg1 = parts[1];
             Kick k = new Kick();
             k.setType(Command.KICK.getCommand());
+            k.setIdentity(arg1);
             return JSON.toJSONString(k);
         }
         else if(command.equals(Command.SEARCHNETWORK.getCommand())){

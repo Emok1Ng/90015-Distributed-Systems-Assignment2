@@ -1,7 +1,7 @@
 package com.assignment2.base.Message.C2S;
 
-import com.assignment2.base.Message.Base;
+import com.assignment2.base.Message.Identity;
 
-public class Kick extends Base {
+public class Kick extends Identity {
 
 }

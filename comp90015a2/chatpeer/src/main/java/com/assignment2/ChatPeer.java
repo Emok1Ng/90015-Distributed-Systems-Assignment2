@@ -128,7 +128,6 @@ public class ChatPeer {
     class Reader implements Runnable{
         private BufferedReader keyboard;
         private OutputParser outputParser;
-
         public Reader() throws IOException {
             this.keyboard = new BufferedReader(new InputStreamReader(System.in));
             this.outputParser = new OutputParser();

@@ -2,9 +2,12 @@ package com.assignment2.base.Enum;
 
 public enum MessageType {
 
-    NEWIDENTITY("newidentity"),ROOMCHANGE("roomchange"),
-    ROOMCONTENTS("roomcontents"),ROOMLIST("roomlist"),
-    MESSAGE("message");
+    ROOMCHANGE("roomchange"),
+    ROOMCONTENTS("roomcontents"),
+    ROOMLIST("roomlist"),
+    MESSAGE("message"),
+    HOSTCHANGE("hostchange"),
+    LISTNEIGHBOTS("listneighbors");
 
     private String type;
 

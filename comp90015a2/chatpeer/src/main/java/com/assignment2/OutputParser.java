@@ -4,7 +4,9 @@ import com.alibaba.fastjson.JSON;
 import com.assignment2.base.Enum.Command;
 import com.assignment2.base.Enum.MessageType;
 import com.assignment2.base.Message.C2S.*;
+import com.assignment2.base.Message.S2C.ListNeighbors;
 
+import java.net.ConnectException;
 import java.util.regex.Pattern;
 
 public class OutputParser {
@@ -55,8 +57,9 @@ public class OutputParser {
             return JSON.toJSONString(w);
         }
         else if(command.equals(Command.LISTNEIGHBORS.getCommand())){
-            //todo
-            return null;
+            ListNeighbors l = new ListNeighbors();
+            l.setType(Command.LISTNEIGHBORS.getCommand());
+            return JSON.toJSONString(l);
         }
         else if(command.equals(Command.QUIT.getCommand())){
             Quit q = new Quit();
@@ -79,27 +82,32 @@ public class OutputParser {
             if(!Pattern.matches(roomPattern, arg1)){
                 return null;
             }
-            arg1 = parts[1];
             Delete d = new Delete();
             d.setType(Command.DELETEROOM.getCommand());
             d.setRoomid(arg1);
             return JSON.toJSONString(d);
         }
         else if(command.equals(Command.KICK.getCommand())){
-            //todo
-            return null;
+            Kick k = new Kick();
+            k.setType(Command.KICK.getCommand());
+            return JSON.toJSONString(k);
         }
         else if(command.equals(Command.SEARCHNETWORK.getCommand())){
-            //todo
-            return null;
+            SearchNetwork sn = new SearchNetwork();
+            sn.setType(Command.SEARCHNETWORK.getCommand());
+            return JSON.toJSONString(sn);
         }
         else if(command.equals(Command.CONNECT.getCommand())){
-            //todo
-            return null;
+            arg1 = parts[1];
+            Connect c = new Connect();
+            c.setIp(arg1);
+            c.setType(Command.CONNECT.getCommand());
+            return JSON.toJSONString(c);
         }
         else if(command.equals(Command.HELP.getCommand())){
-            //todo
-            return null;
+            Help h = new Help();
+            h.setType(Command.HELP.getCommand());
+            return JSON.toJSONString(h);
         }
         else{
             return null;

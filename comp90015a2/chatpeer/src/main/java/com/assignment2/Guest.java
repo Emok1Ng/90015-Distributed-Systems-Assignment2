@@ -1,7 +1,5 @@
 package com.assignment2;
 
-import java.util.ArrayList;
-
 public class Guest {
 
     private String identity;

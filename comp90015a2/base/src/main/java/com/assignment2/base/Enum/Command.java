@@ -3,11 +3,11 @@ package com.assignment2.base.Enum;
 public enum Command {
     //local
     CREATEROOM("createroom"),DELETEROOM("delete"),
-    KICK("kick"),QUIT("quit"),
-    SEARCHNETWORK("searchnetwork"),CONNECT("connect"),HELP("help"),
+    KICK("kick"),HELP("help"),
+    SEARCHNETWORK("searchnetwork"),CONNECT("connect"),
 
     //remote
-    JOIN("join"),WHO("who"),LIST("list"),
+    JOIN("join"),WHO("who"),LIST("list"),QUIT("quit"),
     LISTNEIGHBORS("listneighbors");
 
     private String command;

@@ -4,14 +4,13 @@ import com.alibaba.fastjson.JSON;
 import com.assignment2.base.Enum.Command;
 import com.assignment2.base.Enum.MessageType;
 import com.assignment2.base.Message.C2S.*;
-import com.assignment2.base.Message.S2C.ListNeighbors;
 
 import java.util.regex.Pattern;
 
 public class OutputParser {
 
     public String toJSON(String s){
-        String toSend = "";
+        String toSend;
         if(s.isEmpty()){
             return null;
         }
@@ -27,9 +26,9 @@ public class OutputParser {
     public String parseToCommand(String s){
         String[] parts = s.split(" ");
         String command = parts[0];
-        String arg1  = "";
+        String arg1 = "";
+        String arg2 = "";
         String roomPattern = "^[a-zA-Z]{1}[a-zA-Z0-9]{2,31}";
-        //remote
         if(command.equals(Command.JOIN.getCommand()) && parts.length >= 2){
             arg1 = parts[1];
             if(!Pattern.matches(roomPattern, arg1)){
@@ -65,7 +64,6 @@ public class OutputParser {
             q.setType(Command.QUIT.getCommand());
             return JSON.toJSONString(q);
         }
-        //local
         else if(command.equals(Command.CREATEROOM.getCommand()) && parts.length >= 2){
             arg1 = parts[1];
             if(!Pattern.matches(roomPattern, arg1)){
@@ -86,7 +84,7 @@ public class OutputParser {
             d.setRoomid(arg1);
             return JSON.toJSONString(d);
         }
-        else if(command.equals(Command.KICK.getCommand())){
+        else if(command.equals(Command.KICK.getCommand()) && parts.length >= 2){
             arg1 = parts[1];
             Kick k = new Kick();
             k.setType(Command.KICK.getCommand());
@@ -98,10 +96,17 @@ public class OutputParser {
             sn.setType(Command.SEARCHNETWORK.getCommand());
             return JSON.toJSONString(sn);
         }
-        else if(command.equals(Command.CONNECT.getCommand())){
+        else if(command.equals(Command.CONNECT.getCommand()) && parts.length >= 2){
             arg1 = parts[1];
+            if(parts.length == 2){
+                arg2 = "";
+            }
+            else{
+                arg2 = parts[2];
+            }
             Connect c = new Connect();
             c.setIp(arg1);
+            c.setPort(arg2);
             c.setType(Command.CONNECT.getCommand());
             return JSON.toJSONString(c);
         }

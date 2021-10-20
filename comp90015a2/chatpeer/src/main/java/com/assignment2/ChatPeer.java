@@ -29,12 +29,23 @@ public class ChatPeer {
 
     public static void main(String[] args) {
         ChatPeer chatPeer;
+        Integer pPort = 4444;
+        Integer iPort = 4444;
         try{
-            //todo
-            chatPeer = new ChatPeer(4444,4444);
+            for(int i=0;i<args.length;i++){
+                if(args[i].equals("-p")){
+                    pPort = Integer.valueOf(args[i+1]);
+                    i += 1;
+                }
+                else if(args[i].equals("-i")){
+                    iPort = Integer.valueOf(args[i+1]);
+                    i += 1;
+                }
+            }
+            chatPeer = new ChatPeer(pPort,iPort);
         }
         catch (Exception e){
-            chatPeer = new ChatPeer(4444,4444);
+            chatPeer = new ChatPeer(pPort,iPort);
         }
         chatPeer.handle();
     }
@@ -60,7 +71,9 @@ public class ChatPeer {
             System.out.println("[LocalChatPeer]:Waiting for connection......");
             serverSocket = new ServerSocket((pPort));
             System.out.printf("[LocalChatPeer]:Listening on port %d\n", pPort);
-            Reader reader = new Reader();
+            Receiver receiver = new Receiver();
+            threadpool.execute(receiver);
+            Reader reader = new Reader(receiver);
             threadpool.execute(reader);
             while(true){
                 Socket socket = serverSocket.accept();
@@ -69,6 +82,7 @@ public class ChatPeer {
             }
         }
         catch(Exception e){
+            e.printStackTrace();
             System.out.println("[LocalChatPeer]: Closed......");
         }
     }
@@ -88,13 +102,12 @@ public class ChatPeer {
         @Override
         public void run() {
             connection_alive = true;
-            broadCast(manager.Analyze("",this));
-            broadCast(manager.Analyze("{\"type\":\"join\",\"roomid\":\"\"}",this));
+            broadCast(manager.Analyze("",this,null));
             while (connection_alive) {
                 try{
                     String input  = reader.readLine();
                     if(input != null){
-                        broadCast(manager.Analyze(input,this));
+                        broadCast(manager.Analyze(input,this,null));
                         String type = JSONObject.parseObject(input).get("type").toString();
                         if(type.equals(Command.QUIT.getCommand())){
                             connection_alive = false;
@@ -104,7 +117,7 @@ public class ChatPeer {
                         connection_alive = false;
                     }
                 }catch (Exception e){
-                    broadCast(manager.Analyze("{\"type\":\"quit\"}",this));
+                    broadCast(manager.Analyze("{\"type\":\"quit\"}",this,null));
                     connection_alive  = false;
                 }
             }
@@ -132,7 +145,9 @@ public class ChatPeer {
     class Reader implements Runnable{
         private BufferedReader keyboard;
         private OutputParser outputParser;
-        public Reader() throws IOException {
+        private Receiver receiver;
+        public Reader(Receiver receiver) throws IOException {
+            this.receiver = receiver;
             this.keyboard = new BufferedReader(new InputStreamReader(System.in));
             this.outputParser = new OutputParser();
         }
@@ -144,12 +159,45 @@ public class ChatPeer {
                     String message = keyboard.readLine();
                     String toSend = outputParser.toJSON(message);
                     if (toSend != null) {
-                        broadCast(manager.Analyze(toSend,null));
+                        broadCast(manager.Analyze(toSend,null, receiver));
                     } else {
                         System.out.println("[ERROR]Unable to process message due to Invalid command/Lack of arguments/Invalid roomid");
                     }
                 } catch (Exception e) {
                     readerAlive = false;
+                }
+            }
+        }
+    }
+
+    class Receiver implements Runnable{
+        private volatile BufferedReader reader;
+        private InputParser inputParser;
+
+        public Receiver() throws IOException {
+            this.reader = null;
+            this.inputParser = new InputParser(manager);
+        }
+
+        public void setReader(Socket socket) {
+            try{
+                this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            }
+            catch(Exception e){
+                this.reader = null;
+            }
+        }
+
+        public void run() {
+            while(true){
+                if(reader != null){
+                    try {
+                        String response = reader.readLine();
+                        inputParser.print(response);
+                    }
+                    catch (Exception e){
+
+                    }
                 }
             }
         }

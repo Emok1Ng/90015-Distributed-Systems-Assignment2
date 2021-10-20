@@ -9,13 +9,15 @@ public class InputParser {
 
     private volatile String identity;
     private volatile String currentRoom;
+    private volatile Manager manager;
 
-    public InputParser() {
-        this.identity = "";
-        this.currentRoom = "MainHall";
+    public InputParser(Manager manager) {
+        this.manager = manager;
+        this.identity = "guest1";
+        this.currentRoom = "";
     }
 
-    public synchronized boolean print(String s, int status, String opearingRoom){
+    public synchronized boolean print(String s){
         JSONObject json = JSON.parseObject(s);
         String type = json.get("type").toString();
         if(type.equals(MessageType.MESSAGE.getType())){
@@ -24,37 +26,13 @@ public class InputParser {
             System.out.printf("[%s] %s>%s\n",this.currentRoom,speaker,content);
         }
         else if(type.equals(MessageType.ROOMLIST.getType())){
-            if(status == 0){
-                String toPrint = "";
-                JSONArray rooms = (JSONArray) json.get("rooms");
-                for(int i=0;i<rooms.size();i++){
-                    JSONObject room = (JSONObject) rooms.get(i);
-                    toPrint += room.get("roomid").toString() + ": " + room.get("count").toString() + " guests\n";
-                }
-                System.out.print(toPrint);
+            String toPrint = "";
+            JSONArray rooms = (JSONArray) json.get("rooms");
+            for(int i=0;i<rooms.size();i++){
+                JSONObject room = (JSONObject) rooms.get(i);
+                toPrint += room.get("roomid").toString() + ": " + room.get("count").toString() + " guests\n";
             }
-            else if(status == 1){
-                JSONArray rooms = (JSONArray) json.get("rooms");
-                for(int i=0;i<rooms.size();i++){
-                    JSONObject room = (JSONObject) rooms.get(i);
-                    if(room.get("roomid").toString().equals(opearingRoom)){
-                        System.out.printf("Room %s created\n",opearingRoom);
-                        return true;
-                    }
-                }
-                System.out.printf("Room %s is invalid or already in use\n",opearingRoom);
-            }
-            else if(status == 2){
-                JSONArray rooms = (JSONArray) json.get("rooms");
-                for(int i=0;i<rooms.size();i++){
-                    JSONObject room = (JSONObject) rooms.get(i);
-                    if(room.get("roomid").toString().equals(opearingRoom)){
-                        System.out.printf("Room %s is invalid or cannot be deleted due to ownership\n",opearingRoom);
-                        return true;
-                    }
-                }
-                System.out.printf("Room %s deleted\n",opearingRoom);
-            }
+            System.out.print(toPrint);
         }
         else if(type.equals(MessageType.ROOMCHANGE.getType())){
             String former = json.get("former").toString();
@@ -64,21 +42,26 @@ public class InputParser {
                 System.out.println("The requested room is invalid or non existent");
             }
             else{
-                if(former.equals("")){
-                    System.out.printf("%s join the %s\n",identity,roomid);
+                if(former.equals("-")){
+                    System.out.printf("%s join the server\n",identity);
                 }
-                else{
-                    if(roomid.equals("")){
-                        System.out.printf("%s left the server\n",identity);
-                        if(identity.equals(this.identity)){
-                            return false;
-                        }
-                        return true;
-                    }
-                    System.out.printf("%s move from %s to %s\n",identity,former,roomid);
+                else if(roomid.equals("-")) {
+                    System.out.printf("%s left the server\n", identity);
+                }
+                else if(former.equals("")) {
+                    System.out.printf("%s move to %s\n",identity,roomid);
+                }
+                else if(roomid.equals("")){
+                    System.out.printf("%s move out from %s\n",identity,former);
                 }
                 if(identity.equals(this.identity)){
-                    this.currentRoom = roomid;
+                    if(!roomid.equals("-")){
+                        this.currentRoom = roomid;
+                    }
+                    else{
+                        this.currentRoom = "";
+                        this.manager.resetSocket();
+                    }
                 }
             }
         }

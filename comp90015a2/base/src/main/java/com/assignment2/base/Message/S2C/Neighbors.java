@@ -4,7 +4,7 @@ import com.assignment2.base.Message.Base;
 
 import java.util.ArrayList;
 
-public class ListNeighbors extends Base {
+public class Neighbors extends Base {
 
     private ArrayList<String> neighbors;
 

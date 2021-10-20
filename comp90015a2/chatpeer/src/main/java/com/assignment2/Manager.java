@@ -6,7 +6,8 @@ import com.assignment2.base.Enum.Command;
 import com.assignment2.base.Enum.MessageType;
 import com.assignment2.base.Message.S2C.*;
 
-
+import java.io.PrintWriter;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -18,36 +19,67 @@ public class Manager {
     private volatile HashMap<Guest, ChatPeer.ChatConnection> connectionHashMap;
     private volatile HashMap<String, ChatRoom> roomHashMap;
     private volatile String nextIdentity;
-    private volatile boolean connected;
-    private volatile ChatPeer.ChatConnection myPeer;
+    private volatile Socket myPeer;
+    private volatile PrintWriter writer;
 
     public Manager() {
-        Guest g = new Guest();
-        g.setCurrentRoom("");
-        g.setIdentity("host");
         this.identityList = new ArrayList<>();
-        this.identityList.add("host");
         this.guestHashMap = new HashMap<>();
-        this.guestHashMap.put(null, g);
         this.connectionHashMap = new HashMap<>();
-        this.connectionHashMap.put(g,null);
         this.roomList = new ArrayList<>();
         ChatRoom emptyRoom = new ChatRoom("", null);
-        emptyRoom.addMember(g);
         this.roomList.add(emptyRoom);
         this.roomHashMap = new HashMap<>();
         this.roomHashMap.put("", emptyRoom);
         this.nextIdentity = "guest1";
-        this.connected = false;
-        this.myPeer = null;
+        this.resetSocket();
     }
 
-    public ArrayList<BroadcastInfo> Analyze(String s, ChatPeer.ChatConnection connection){
+    public void resetSocket(){
+        this.myPeer = null;
+        this.writer = null;
+        Guest g = new Guest();
+        g.setCurrentRoom("");
+        g.setIdentity("host");
+        this.identityList.add("host");
+        this.guestHashMap.put(null, g);
+        this.connectionHashMap.put(g,null);
+        ChatRoom emptyRoom = this.roomHashMap.get("");
+        emptyRoom.addMember(g);
+    }
+
+    public void sendMessage(String message) {
+        writer.print(message+"\n");
+        writer.flush();
+    }
+
+
+    public ArrayList<BroadcastInfo> Analyze(String s, ChatPeer.ChatConnection connection, ChatPeer.Receiver receiver){
         ArrayList<BroadcastInfo> infoList;
         //local input
         if(connection == null){
             JSONObject json = JSON.parseObject(s);
             String command = json.get("type").toString();
+            //have a peer
+            if(this.myPeer != null){
+                if(command.equals(Command.CREATEROOM.getCommand()) ||
+                        command.equals(Command.KICK.getCommand()) ||
+                        command.equals(Command.DELETEROOM.getCommand()) ||
+                        command.equals(Command.CONNECT.getCommand())){
+                    System.out.println("This command can not be used when connecting to a remote peer.");
+                }
+                else if(command.equals(Command.HELP.getCommand())){
+                    this.Help();
+                }
+                else if(command.equals(Command.SEARCHNETWORK.getCommand())){
+                    this.SearchNetwork();
+                }
+                else{
+                    sendMessage(s);
+                }
+                return null;
+            }
+            //not have a peer
             Guest g = this.guestHashMap.get(null);
             if(command.equals(Command.JOIN.getCommand())){
                 String roomid = json.get("roomid").toString();
@@ -65,9 +97,13 @@ public class Manager {
                 System.out.printf("[%s] %s>#%s %s\n",g.getCurrentRoom(),g.getIdentity(),Command.WHO.getCommand(),roomid);
                 infoList = this.Who(roomid, g);
             }
+            else if(command.equals(Command.LISTNEIGHBORS.getCommand())){
+                System.out.printf("[%s] %s>#%s\n",g.getCurrentRoom(),g.getIdentity(),Command.LISTNEIGHBORS.getCommand());
+                infoList = this.ListNeighbors(g);
+            }
             else if(command.equals(Command.SEARCHNETWORK.getCommand())){
                 System.out.printf("[%s] %s>#%s\n",g.getCurrentRoom(),g.getIdentity(),Command.SEARCHNETWORK.getCommand());
-                infoList = this.SearchNetwork(g);
+                infoList = this.SearchNetwork();
             }
             else if(command.equals(Command.QUIT.getCommand())){
                 System.out.printf("[%s] %s>#%s\n",g.getCurrentRoom(),g.getIdentity(),Command.QUIT.getCommand());
@@ -80,7 +116,7 @@ public class Manager {
             }
             else if(command.equals(Command.HELP.getCommand())){
                 System.out.printf("[%s] %s>#%s\n",g.getCurrentRoom(),g.getIdentity(),Command.HELP.getCommand());
-                infoList = this.Help(g);
+                infoList = this.Help();
             }
             else if(command.equals(Command.CREATEROOM.getCommand())){
                 String roomid = json.get("roomid").toString();
@@ -89,6 +125,17 @@ public class Manager {
             else if(command.equals(Command.DELETEROOM.getCommand())){
                 String roomid = json.get("roomid").toString();
                 infoList = this.DeleteRoom(roomid, g);
+            }
+            else if(command.equals(Command.CONNECT.getCommand())){
+                String ip = json.get("ip").toString();
+                String port = json.get("port").toString();
+                if(port.equals("")){
+                    System.out.printf("[%s] %s>#%s %s\n",g.getCurrentRoom(),g.getIdentity(),Command.CONNECT.getCommand(),ip);
+                }
+                else{
+                    System.out.printf("[%s] %s>#%s %s %s\n",g.getCurrentRoom(),g.getIdentity(),Command.CONNECT.getCommand(),ip,port);
+                }
+                infoList = this.Connect(ip,port,g,receiver);
             }
             else{
                 Message message = new Message();
@@ -106,6 +153,7 @@ public class Manager {
                 infoList.add(info);
             }
         }
+        //remote input
         else{
             if(!this.guestHashMap.containsKey(connection)){
                 Guest g = new Guest();
@@ -132,9 +180,9 @@ public class Manager {
                     System.out.printf("[%s] %s>#%s %s\n",g.getCurrentRoom(),g.getIdentity(),Command.WHO.getCommand(),roomid);
                     infoList = this.Who(roomid, g);
                 }
-                else if(command.equals(Command.SEARCHNETWORK.getCommand())){
-                    System.out.printf("[%s] %s>#%s\n",g.getCurrentRoom(),g.getIdentity(),Command.SEARCHNETWORK.getCommand());
-                    infoList = this.SearchNetwork(g);
+                else if(command.equals(Command.LISTNEIGHBORS.getCommand())){
+                    System.out.printf("[%s] %s>#%s\n",g.getCurrentRoom(),g.getIdentity(),Command.LISTNEIGHBORS.getCommand());
+                    infoList = this.ListNeighbors(g);
                 }
                 else if(command.equals(Command.QUIT.getCommand())){
                     System.out.printf("[%s] %s>#%s\n",g.getCurrentRoom(),g.getIdentity(),Command.QUIT.getCommand());
@@ -192,6 +240,7 @@ public class Manager {
         rc.setIdentity(g.getIdentity());
         rc.setRoomid("");
         rc.setFormer("-");
+        this.roomHashMap.get("").addMember(g);
         BroadcastInfo info = new BroadcastInfo();
         info.setContent(JSON.toJSONString(rc));
         for(ChatPeer.ChatConnection c:this.guestHashMap.keySet()){
@@ -349,10 +398,25 @@ public class Manager {
         BroadcastInfo info = new BroadcastInfo();
         //todo local part
         if(!this.roomHashMap.containsKey(roomid)){
-            infoList.add(info);
-            return infoList;
+            return null;
         }
         RoomContents rc = getRoomContents(roomid);
+        if(this.connectionHashMap.get(g) == null){
+            String toPrint = "";
+            ArrayList<String> identities = rc.getIdentities();
+            if(identities.size() == 0){
+                toPrint = roomid + " is an empty room";
+            }
+            else{
+                toPrint += roomid + " contains";
+                for(int i=0;i<identities.size();i++){
+                    String identity = identities.get(i).toString();
+                    toPrint += " " + identity;
+                }
+            }
+            System.out.println(toPrint);
+            return null;
+        }
         info.setContent(JSON.toJSONString(rc));
         info.addConnection(this.connectionHashMap.get(g));
         infoList.add(info);
@@ -366,7 +430,7 @@ public class Manager {
         rc.setType(MessageType.ROOMCHANGE.getType());
         rc.setFormer(g.getCurrentRoom());
         rc.setIdentity(g.getIdentity());
-        rc.setRoomid("");
+        rc.setRoomid("-");
         info.setContent(JSON.toJSONString(rc));
         System.out.printf("%s left the server\n",g.getIdentity());
         ArrayList<Guest> guestsToSend = this.roomHashMap.get(g.getCurrentRoom()).getMembers();
@@ -376,11 +440,17 @@ public class Manager {
         this.roomHashMap.get(g.getCurrentRoom()).deleteMember(g);
         this.identityList.remove(g.getIdentity());
         this.connectionHashMap.remove(g);
+        CheckIdentity();
         infoList.add(info);
         return infoList;
     }
 
-    private synchronized ArrayList<BroadcastInfo> SearchNetwork(Guest g){
+    private synchronized ArrayList<BroadcastInfo> SearchNetwork(){
+        //todo
+        return null;
+    }
+
+    private synchronized ArrayList<BroadcastInfo> ListNeighbors(Guest g){
         //todo
         return null;
     }
@@ -390,8 +460,42 @@ public class Manager {
         return null;
     }
 
-    private synchronized ArrayList<BroadcastInfo> Help(Guest g){
-        //todo
+    private synchronized ArrayList<BroadcastInfo> Help(){
+        System.out.println(
+                "#connect IP[:port] [local port] - connect to another peer\n" +
+                "#createroom RoomId - create a room\n" +
+                "#delete RoomId - delete a room\n" +
+                "#help - list this information\n" +
+                "#join RoomId - join a room\n" +
+                "#kick Identity - kick and block a user\n" +
+                "#list - list all available rooms\n" +
+                "#listneighbors - list peers' network address that connected to the peer\n" +
+                "#quit - disconnect from a peer\n" +
+                "#searchnetwork - search all available peers\n" +
+                "#who RoomId - get information of a room"
+        );
+        return null;
+    }
+
+    private synchronized ArrayList<BroadcastInfo> Connect(String ip, String port, Guest g, ChatPeer.Receiver receiver){
+        String[] parts = ip.split(":");
+        String hostName = parts[0];
+        Integer hostPort = Integer.valueOf(parts[1]);
+        Socket socket;
+        try{
+            socket = new Socket(hostName, hostPort);
+            this.myPeer = socket;
+            this.writer = new PrintWriter(this.myPeer.getOutputStream(), true);
+            receiver.setReader(this.myPeer);
+        }catch (Exception e){
+            System.out.println("Fail to connect.");
+            this.myPeer = null;
+            return null;
+        }
+        this.roomHashMap.get(g.getCurrentRoom()).deleteMember(g);
+        this.guestHashMap.remove(null);
+        this.identityList.remove(g.getIdentity());
+        this.connectionHashMap.remove(g);
         return null;
     }
 

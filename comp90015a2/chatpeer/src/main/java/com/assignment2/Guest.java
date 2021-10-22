@@ -4,12 +4,13 @@ public class Guest {
 
     private String identity;
     private String currentRoom;
+    private Integer pPort;
 
     public Guest() {
     }
 
     public String getIdentity() {
-        return identity;
+        return identity + ":" + pPort;
     }
 
     public void setIdentity(String identity) {
@@ -24,4 +25,11 @@ public class Guest {
         this.currentRoom = currentRoom;
     }
 
+    public Integer getpPort() {
+        return pPort;
+    }
+
+    public void setpPort(Integer pPort) {
+        this.pPort = pPort;
+    }
 }

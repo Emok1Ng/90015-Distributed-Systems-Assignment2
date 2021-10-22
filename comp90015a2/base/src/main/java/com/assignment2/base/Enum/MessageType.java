@@ -7,7 +7,7 @@ public enum MessageType {
     ROOMLIST("roomlist"),
     MESSAGE("message"),
     HOSTCHANGE("hostchange"),
-    NEIGHBOTS("neighbors");
+    NEIGHBORS("neighbors");
 
     private String type;
 

@@ -15,22 +15,23 @@ import java.util.concurrent.Executors;
 
 public class ChatPeer {
 
-    private int iPort = 4444;
-    private int pPort = 4444;
+    private int iPort;
+    private int pPort;
     private String hostName;
 
-    private final Manager manager = new Manager();
+    private Manager manager = new Manager();
 
     public ChatPeer(int pPort, int iPort) {
         this.hostName = "127.0.0.1";
         this.pPort = pPort;
         this.iPort = iPort;
+        this.manager.setPort(iPort, pPort);
     }
 
     public static void main(String[] args) {
         ChatPeer chatPeer;
         Integer pPort = 4444;
-        Integer iPort = 4444;
+        Integer iPort = -1;
         try{
             for(int i=0;i<args.length;i++){
                 if(args[i].equals("-p")){
@@ -139,6 +140,10 @@ public class ChatPeer {
         public void sendMessage(String message) {
             writer.print(message+"\n");
             writer.flush();
+        }
+
+        public Socket getSocket(){
+            return this.socket;
         }
     }
 

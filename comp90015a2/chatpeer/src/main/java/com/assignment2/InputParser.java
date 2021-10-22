@@ -13,7 +13,6 @@ public class InputParser {
 
     public InputParser(Manager manager) {
         this.manager = manager;
-        this.identity = "guest1";
         this.currentRoom = "";
     }
 
@@ -44,6 +43,7 @@ public class InputParser {
             else{
                 if(former.equals("-")){
                     System.out.printf("%s join the server\n",identity);
+                    this.identity = identity;
                 }
                 else if(roomid.equals("-")) {
                     System.out.printf("%s left the server\n", identity);
@@ -80,6 +80,9 @@ public class InputParser {
                 }
             }
             System.out.println(toPrint);
+        }
+        else if(type.equals(MessageType.NEIGHBORS.getType())){
+            System.out.println(json.get("neighbors").toString());
         }
         return true;
     }

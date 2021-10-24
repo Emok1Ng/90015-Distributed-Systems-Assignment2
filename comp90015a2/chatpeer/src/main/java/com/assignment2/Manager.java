@@ -11,6 +11,8 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 public class Manager {
 
@@ -23,6 +25,7 @@ public class Manager {
     private volatile PrintWriter writer;
     private volatile Integer pPort;
     private volatile Integer iPort;
+    private volatile ArrayList<String> banList;
 
     public Manager() {
         this.identityList = new ArrayList<>();
@@ -33,12 +36,13 @@ public class Manager {
         this.roomList.add(emptyRoom);
         this.roomHashMap = new HashMap<>();
         this.roomHashMap.put("", emptyRoom);
-        this.resetSocket();
+        this.banList = new ArrayList<>();
     }
 
     public void setPort(Integer iPort, Integer pPort){
         this.iPort = iPort;
         this.pPort = pPort;
+        this.resetSocket();
     }
 
     public void resetSocket(){
@@ -60,6 +64,9 @@ public class Manager {
         writer.flush();
     }
 
+    public boolean ban(String ip){
+        return this.banList.contains(ip);
+    }
 
     public ArrayList<BroadcastInfo> Analyze(String s, ChatPeer.ChatConnection connection, ChatPeer.Receiver receiver){
         ArrayList<BroadcastInfo> infoList;
@@ -90,9 +97,6 @@ public class Manager {
             Guest g = this.guestHashMap.get(null);
             if(command.equals(Command.JOIN.getCommand())){
                 String roomid = json.get("roomid").toString();
-                if(!g.getCurrentRoom().equals("")){
-                    System.out.printf("[%s] %s>#%s %s\n",g.getCurrentRoom(),g.getIdentity(),Command.JOIN.getCommand(),roomid);
-                }
                 infoList = this.Join(roomid, g);
             }
             else if(command.equals(Command.LIST.getCommand())){
@@ -109,7 +113,8 @@ public class Manager {
                 infoList = this.SearchNetwork();
             }
             else if(command.equals(Command.QUIT.getCommand())){
-                infoList = this.Quit(g);
+                System.out.println("You are not connecting to a remote peer.");
+                infoList = null;
             }
             else if(command.equals(Command.KICK.getCommand())){
                 String identity = json.get("identity").toString();
@@ -209,7 +214,9 @@ public class Manager {
     private synchronized ArrayList<BroadcastInfo> NewIdentity(Guest g, ChatPeer.ChatConnection connection){
         String ip = connection.getSocket().getInetAddress().toString();
         Integer iPort = connection.getSocket().getPort();
-        System.out.printf("Connected by a new peer from %s:%s\n", ip, iPort);
+        if(this.myPeer == null && !this.ban(ip)){
+            System.out.printf("Connected by a new peer from %s:%s\n", ip, iPort);
+        }
         g.setIdentity(ip);
         g.setCurrentRoom("");
         this.connectionHashMap.put(g, connection);
@@ -219,7 +226,22 @@ public class Manager {
 
     private synchronized ArrayList<BroadcastInfo> SendBackIdentity(Integer pPort, Guest g){
         ArrayList<BroadcastInfo> infoList = new ArrayList<>();
+        String ip = this.connectionHashMap.get(g).getSocket().getInetAddress().toString();
         g.setpPort(pPort);
+        if(this.ban(ip)){
+            BroadcastInfo info = new BroadcastInfo();
+            RoomChange rc = new RoomChange();
+            rc.setType(MessageType.ROOMCHANGE.getType());
+            rc.setFormer("-");
+            rc.setIdentity(g.getIdentity());
+            rc.setRoomid("--");
+            info.setContent(JSON.toJSONString(rc));
+            info.addConnection(this.connectionHashMap.get(g));
+            infoList.add(info);
+            this.guestHashMap.remove(this.connectionHashMap.get(g));
+            this.connectionHashMap.remove(g);
+            return infoList;
+        }
         this.identityList.add(g.getIdentity());
         RoomChange rc = new RoomChange();
         rc.setType(MessageType.ROOMCHANGE.getType());
@@ -412,10 +434,6 @@ public class Manager {
     }
 
     private synchronized ArrayList<BroadcastInfo> Quit(Guest g){
-        if(this.myPeer == null){
-            System.out.println("You are not connecting to a remote peer.");
-            return null;
-        }
         ArrayList<BroadcastInfo> infoList = new ArrayList<>();
         BroadcastInfo info = new BroadcastInfo();
         RoomChange rc = new RoomChange();
@@ -431,6 +449,7 @@ public class Manager {
         }
         this.roomHashMap.get(g.getCurrentRoom()).deleteMember(g);
         this.identityList.remove(g.getIdentity());
+        this.guestHashMap.remove(this.connectionHashMap.get(g));
         this.connectionHashMap.remove(g);
         infoList.add(info);
         return infoList;
@@ -466,8 +485,50 @@ public class Manager {
     }
 
     private synchronized ArrayList<BroadcastInfo> Kick(String identity, Guest g){
-        //todo
-        return null;
+        if(!this.identityList.contains(identity)){
+            System.out.println("Peer invalid or not exist.");
+            return null;
+        }
+        Iterator iter = this.guestHashMap.entrySet().iterator();
+        Guest kicked = null;
+        while(iter.hasNext()){
+            Map.Entry entry = (Map.Entry) iter.next();
+            Guest value = (Guest) entry.getValue();
+            if(value.getIdentity().equals(identity)){
+                kicked = value;
+                break;
+            }
+        }
+        ArrayList<BroadcastInfo> infoList = new ArrayList<>();
+        BroadcastInfo info1 = new BroadcastInfo();
+        BroadcastInfo info2 = new BroadcastInfo();
+        RoomChange rc1 = new RoomChange();
+        RoomChange rc2 = new RoomChange();
+        rc1.setType(MessageType.ROOMCHANGE.getType());
+        rc1.setFormer(kicked.getCurrentRoom());
+        rc1.setIdentity(identity);
+        rc1.setRoomid("--");
+        rc2.setType(MessageType.ROOMCHANGE.getType());
+        rc2.setFormer(kicked.getCurrentRoom());
+        rc2.setIdentity(identity);
+        rc2.setRoomid("-");
+        info1.setContent(JSON.toJSONString(rc1));
+        info1.setContent(JSON.toJSONString(rc1));
+        info1.addConnection(this.connectionHashMap.get(kicked));
+        infoList.add(info1);
+        info2.setContent(JSON.toJSONString(rc2));
+        info2.setContent(JSON.toJSONString(rc2));
+        this.roomHashMap.get(kicked.getCurrentRoom()).deleteMember(kicked);
+        System.out.printf("%s is kicked.\n",identity);
+        this.banList.add(identity.split(":")[0]);
+        ArrayList<Guest> guestsToSend = this.roomHashMap.get(kicked.getCurrentRoom()).getMembers();
+        for(int i=0;i<guestsToSend.size();i++){
+            info2.addConnection(this.connectionHashMap.get(guestsToSend.get(i)));
+        }
+        infoList.add(info2);
+        this.identityList.remove(identity);
+        this.connectionHashMap.remove(kicked);
+        return infoList;
     }
 
     private synchronized ArrayList<BroadcastInfo> Help(){

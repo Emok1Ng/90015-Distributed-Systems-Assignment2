@@ -41,26 +41,33 @@ public class InputParser {
                 System.out.println("The requested room is invalid or non existent");
             }
             else{
-                if(former.equals("-")){
-                    System.out.printf("%s join the server\n",identity);
+                if(former.equals("-") && !roomid.equals("--")){
+                    System.out.printf("%s join the server.\n",identity);
                     this.identity = identity;
                 }
                 else if(roomid.equals("-")) {
-                    System.out.printf("%s left the server\n", identity);
+                    System.out.printf("%s left the server.\n", identity);
                 }
-                else if(former.equals("")) {
-                    System.out.printf("%s move to %s\n",identity,roomid);
+                else if(former.equals("") && !roomid.equals("--")) {
+                    System.out.printf("%s move to %s.\n",identity,roomid);
                 }
                 else if(roomid.equals("")){
-                    System.out.printf("%s move out from %s\n",identity,former);
+                    System.out.printf("%s move out from %s.\n",identity,former);
+                }
+                else if(roomid.equals("--")){
+                    System.out.println("You are kicked and the ip is banned.");
+                    this.currentRoom = "";
+                    this.manager.resetSocket();
+                    return false;
                 }
                 if(identity.equals(this.identity)){
-                    if(!roomid.equals("-")){
+                    if(!roomid.equals("-") && !roomid.equals("--")){
                         this.currentRoom = roomid;
                     }
                     else{
                         this.currentRoom = "";
                         this.manager.resetSocket();
+                        return false;
                     }
                 }
             }

@@ -113,6 +113,9 @@ public class ChatPeer {
                         if(type.equals(Command.QUIT.getCommand())){
                             connection_alive = false;
                         }
+                        if(manager.ban(this.socket.getInetAddress().toString())){
+                            connection_alive = false;
+                        }
                     }
                     else{
                         connection_alive = false;
@@ -189,6 +192,7 @@ public class ChatPeer {
                 this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             }
             catch(Exception e){
+                e.printStackTrace();
                 this.reader = null;
             }
         }
@@ -198,10 +202,12 @@ public class ChatPeer {
                 if(reader != null){
                     try {
                         String response = reader.readLine();
-                        inputParser.print(response);
+                        if(!inputParser.print(response)){
+                            reader = null;
+                        }
                     }
                     catch (Exception e){
-
+                        reader = null;
                     }
                 }
             }

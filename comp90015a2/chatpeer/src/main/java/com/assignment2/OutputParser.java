@@ -29,9 +29,14 @@ public class OutputParser {
         String arg1 = "";
         String arg2 = "";
         String roomPattern = "^[a-zA-Z]{1}[a-zA-Z0-9]{2,31}";
-        if(command.equals(Command.JOIN.getCommand()) && parts.length >= 2){
-            arg1 = parts[1];
-            if(!Pattern.matches(roomPattern, arg1)){
+        if(command.equals(Command.JOIN.getCommand())){
+            if(parts.length >= 2){
+                arg1 = parts[1];
+            }
+            else{
+                arg1 = "";
+            }
+            if(!Pattern.matches(roomPattern, arg1) && !arg1.equals("")){
                 return null;
             }
             Join j = new Join();

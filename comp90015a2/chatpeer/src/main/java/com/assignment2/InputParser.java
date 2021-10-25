@@ -38,7 +38,7 @@ public class InputParser {
             String roomid = json.get("roomid").toString();
             String identity = json.get("identity").toString();
             if(former.equals(roomid)){
-                System.out.println("The requested room is invalid or non existent");
+                System.out.println("The requested room is invalid now or non existent");
             }
             else{
                 if(former.equals("-") && !roomid.equals("--")){

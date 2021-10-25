@@ -279,10 +279,13 @@ public class Manager {
                     guestsToSendFormer = this.roomHashMap.get(g.getCurrentRoom()).getMembers();
                 }
                 if(g.getCurrentRoom().equals("")){
-                    System.out.printf("%s move to %s\n",g.getIdentity(),roomid);
+                    System.out.printf("%s move to %s.\n",g.getIdentity(),roomid);
+                }
+                else if(roomid.equals("")){
+                    System.out.printf("%s move out from %s.\n",g.getIdentity(),g.getCurrentRoom());
                 }
                 else{
-                    System.out.printf("%s move from %s to %s\n",g.getIdentity(),g.getCurrentRoom(),roomid);
+                    System.out.printf("%s move from %s to %s.\n",g.getIdentity(),g.getCurrentRoom(),roomid);
                 }
             }
             else{
@@ -472,6 +475,11 @@ public class Manager {
                 continue;
             }
             neighbors.add(identity);
+        }
+        if(this.myPeer != null){
+            String ip = this.myPeer.getInetAddress().toString();
+            Integer port = this.myPeer.getPort();
+            neighbors.add(ip + ":" + port);
         }
         n.setNeighbors(neighbors);
         if(this.connectionHashMap.get(g) == null) {

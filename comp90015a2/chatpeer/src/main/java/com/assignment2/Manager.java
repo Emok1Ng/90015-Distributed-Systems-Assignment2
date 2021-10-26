@@ -1,11 +1,17 @@
 package com.assignment2;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.assignment2.base.Enum.Command;
 import com.assignment2.base.Enum.MessageType;
+import com.assignment2.base.Message.C2S.List;
+import com.assignment2.base.Message.C2S.ListNeighbors;
+import com.assignment2.base.Message.C2S.Quit;
 import com.assignment2.base.Message.S2C.*;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -212,10 +218,10 @@ public class Manager {
     }
 
     private synchronized ArrayList<BroadcastInfo> NewIdentity(Guest g, ChatPeer.ChatConnection connection){
-        String ip = connection.getSocket().getInetAddress().toString();
+        String ip = connection.getSocket().getInetAddress().toString().split("/")[1];
         Integer iPort = connection.getSocket().getPort();
         if(this.myPeer == null && !this.ban(ip)){
-            System.out.printf("Connected by a new peer from %s:%s\n", ip, iPort);
+            //System.out.printf("Connected by a new peer from %s:%s\n", ip, iPort);
         }
         g.setIdentity(ip);
         g.setCurrentRoom("");
@@ -226,7 +232,7 @@ public class Manager {
 
     private synchronized ArrayList<BroadcastInfo> SendBackIdentity(Integer pPort, Guest g){
         ArrayList<BroadcastInfo> infoList = new ArrayList<>();
-        String ip = this.connectionHashMap.get(g).getSocket().getInetAddress().toString();
+        String ip = this.connectionHashMap.get(g).getSocket().getInetAddress().toString().split("/")[1];
         g.setpPort(pPort);
         if(this.ban(ip)){
             BroadcastInfo info = new BroadcastInfo();
@@ -272,10 +278,13 @@ public class Manager {
         }
         else{
             ArrayList<Guest> guestsToSendFormer = new ArrayList<>();
-            ArrayList<Guest> guestsToSendCurrent = this.roomHashMap.get(roomid).getMembers();
+            ArrayList<Guest> guestsToSendCurrent = new ArrayList<>();
+            if(!roomid.equals("")){
+                guestsToSendCurrent = this.roomHashMap.get(roomid).getMembers();
+            }
             if(!g.getCurrentRoom().equals("-")){
                 this.roomHashMap.get(g.getCurrentRoom()).deleteMember(g);
-                if(this.roomHashMap.get(g.getCurrentRoom())!=null){
+                if(!g.getCurrentRoom().equals("")){
                     guestsToSendFormer = this.roomHashMap.get(g.getCurrentRoom()).getMembers();
                 }
                 if(g.getCurrentRoom().equals("")){
@@ -445,8 +454,14 @@ public class Manager {
         rc.setIdentity(g.getIdentity());
         rc.setRoomid("-");
         info.setContent(JSON.toJSONString(rc));
-        System.out.printf("%s left the server\n",g.getIdentity());
-        ArrayList<Guest> guestsToSend = this.roomHashMap.get(g.getCurrentRoom()).getMembers();
+        //System.out.printf("%s left the server\n",g.getIdentity());
+        ArrayList<Guest> guestsToSend = new ArrayList<>();
+        if(!g.getCurrentRoom().equals("")){
+            guestsToSend = this.roomHashMap.get(g.getCurrentRoom()).getMembers();
+        }
+        else{
+            guestsToSend.add(g);
+        }
         for(int i=0;i<guestsToSend.size();i++){
             info.addConnection(this.connectionHashMap.get(guestsToSend.get(i)));
         }
@@ -459,7 +474,78 @@ public class Manager {
     }
 
     private synchronized ArrayList<BroadcastInfo> SearchNetwork(){
-        //todo
+        ArrayList<String> ips = new ArrayList<>();
+        ArrayList<String> visited = new ArrayList<>();
+        ListNeighbors ln = new ListNeighbors();
+        ln.setType(Command.LISTNEIGHBORS.getCommand());
+        List l = new List();
+        l.setType(Command.LIST.getCommand());
+        Quit q = new Quit();
+        q.setType(Command.QUIT.getCommand());
+        HostChange hc = new HostChange();
+        hc.setType(MessageType.HOSTCHANGE.getType());
+        hc.setHost(this.pPort.toString());
+        PrintWriter writer;
+        BufferedReader reader;
+        String response;
+        String ip;
+        Integer port;
+        Socket socket;
+        String myIp;
+        String toPrint = "";
+        JSONObject json;
+        if(myPeer!=null){
+            ip = this.myPeer.getInetAddress().toString().split("/")[1];
+            port = this.myPeer.getPort();
+            ips.add(ip + ":" + port);
+        }
+        for(int i=0;i<this.identityList.size();i++){
+            if(!this.identityList.get(i).equals("localhost")){
+                ips.add(this.identityList.get(i));
+            }
+        }
+        while(ips.size()!=0){
+            try{
+                ip = ips.get(0).split(":")[0];
+                port = Integer.parseInt(ips.get(0).split(":")[1]);
+                toPrint += ip + ":" + port + '\n';
+                visited.add(ip + ":" + port);
+                socket = new Socket(ip, port);
+                reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                writer = new PrintWriter(socket.getOutputStream(), true);
+                writer.print(JSON.toJSONString(hc)+"\n");
+                writer.flush();
+                response = reader.readLine();
+                json = JSON.parseObject(response);
+                myIp = json.get("identity").toString();
+                writer.print(JSON.toJSONString(l)+"\n");
+                writer.flush();
+                response = reader.readLine();
+                json = JSON.parseObject(response);
+                JSONArray rooms = (JSONArray) json.get("rooms");
+                for(int i=0;i<rooms.size();i++){
+                    JSONObject room = (JSONObject) rooms.get(i);
+                    toPrint += room.get("roomid") + " " + room.get("count") + " users.\n";
+                }
+                writer.print(JSON.toJSONString(ln)+"\n");
+                writer.flush();
+                response = reader.readLine();
+                json = JSON.parseObject(response);
+                JSONArray neighbors = (JSONArray) json.get("neighbors");
+                for(int i=0;i<neighbors.size();i++){
+                    if(!neighbors.get(i).equals(myIp) && !visited.contains(neighbors.get(i).toString())){
+                        ips.add(neighbors.get(i).toString());
+                    }
+                }
+                writer.print(JSON.toJSONString(q)+"\n");
+                writer.flush();
+                ips.remove(0);
+            }
+            catch(Exception e){
+                e.printStackTrace();
+            }
+        }
+        System.out.print(toPrint);
         return null;
     }
 
@@ -477,7 +563,7 @@ public class Manager {
             neighbors.add(identity);
         }
         if(this.myPeer != null){
-            String ip = this.myPeer.getInetAddress().toString();
+            String ip = this.myPeer.getInetAddress().toString().split("/")[1];
             Integer port = this.myPeer.getPort();
             neighbors.add(ip + ":" + port);
         }

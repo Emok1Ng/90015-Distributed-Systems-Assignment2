@@ -8,7 +8,7 @@ public enum Command {
 
     //remote
     JOIN("join"),WHO("who"),LIST("list"),QUIT("quit"),
-    LISTNEIGHBORS("listneighbors");
+    LISTNEIGHBORS("listneighbors"),SHOUT("shout");
 
     private String command;
 

@@ -67,7 +67,7 @@ public class ChatPeer {
 
     public void handle() {
         ServerSocket serverSocket;
-        ExecutorService threadpool = Executors.newFixedThreadPool(50);
+        ExecutorService threadpool = Executors.newFixedThreadPool(100);
         try {
             System.out.println("[LocalChatPeer]:Waiting for connection......");
             serverSocket = new ServerSocket((pPort));

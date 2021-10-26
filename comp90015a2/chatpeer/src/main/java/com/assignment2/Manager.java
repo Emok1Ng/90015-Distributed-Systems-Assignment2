@@ -142,6 +142,10 @@ public class Manager {
                 String port = json.get("port").toString();
                 infoList = this.Connect(ip,port,g,receiver);
             }
+            else if(command.equals(Command.SHOUT.getCommand())){
+                String content = json.get("content").toString();
+                infoList = this.Shout(content,g);
+            }
             else{
                 if(this.guestHashMap.get(connection).getCurrentRoom().equals("")){
                     return null;
@@ -191,6 +195,16 @@ public class Manager {
                 }
                 else if(command.equals(Command.QUIT.getCommand())){
                     infoList = this.Quit(g);
+                }
+                else if(command.equals(Command.SHOUT.getCommand())){
+                    String content = json.get("content").toString();
+                    infoList = this.Shout(content,g);
+                }
+                else if(command.equals(MessageType.SHOUTMSG.getType())){
+                    String speaker = json.get("identity").toString();
+                    String content = json.get("content").toString();
+                    System.out.printf("%s shouted %s\n",speaker,content);
+                    return null;
                 }
                 else{
                     Message message = new Message();
@@ -680,6 +694,82 @@ public class Manager {
         this.guestHashMap.remove(null);
         this.identityList.remove(g.getIdentity());
         this.connectionHashMap.remove(g);
+        return null;
+    }
+
+    private synchronized ArrayList<BroadcastInfo> Shout(String content, Guest g){
+        String identity;
+        ArrayList<String> ips = new ArrayList<>();
+        ArrayList<String> visited = new ArrayList<>();
+        if(this.connectionHashMap.get(g) == null){
+            identity = "127.0.0.1" + ":" + this.pPort;
+        }
+        else{
+            identity = g.getIdentity();
+        }
+        System.out.printf("%s shouted %s\n",identity,content);
+        ShoutMsg shout = new ShoutMsg();
+        shout.setType(MessageType.SHOUTMSG.getType());
+        shout.setIdentity(identity);
+        shout.setContent(content);
+        ListNeighbors ln = new ListNeighbors();
+        ln.setType(Command.LISTNEIGHBORS.getCommand());
+        Quit q = new Quit();
+        q.setType(Command.QUIT.getCommand());
+        HostChange hc = new HostChange();
+        hc.setType(MessageType.HOSTCHANGE.getType());
+        hc.setHost(this.pPort.toString());
+        PrintWriter writer;
+        BufferedReader reader;
+        String response;
+        String ip;
+        Integer port;
+        Socket socket;
+        String myIp;
+        JSONObject json;
+        if(myPeer!=null){
+            ip = this.myPeer.getInetAddress().toString().split("/")[1];
+            port = this.myPeer.getPort();
+            ips.add(ip + ":" + port);
+        }
+        for(int i=0;i<this.identityList.size();i++){
+            if(!this.identityList.get(i).equals("localhost")){
+                ips.add(this.identityList.get(i));
+            }
+        }
+        while(ips.size()!=0){
+            try{
+                ip = ips.get(0).split(":")[0];
+                port = Integer.parseInt(ips.get(0).split(":")[1]);
+                visited.add(ip + ":" + port);
+                socket = new Socket(ip, port);
+                reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                writer = new PrintWriter(socket.getOutputStream(), true);
+                writer.print(JSON.toJSONString(hc)+"\n");
+                writer.flush();
+                response = reader.readLine();
+                json = JSON.parseObject(response);
+                myIp = json.get("identity").toString();
+                writer.print(JSON.toJSONString(ln)+"\n");
+                writer.flush();
+                response = reader.readLine();
+                json = JSON.parseObject(response);
+                JSONArray neighbors = (JSONArray) json.get("neighbors");
+                for(int i=0;i<neighbors.size();i++){
+                    if(!neighbors.get(i).equals(myIp) && !visited.contains(neighbors.get(i).toString())){
+                        ips.add(neighbors.get(i).toString());
+                    }
+                }
+                writer.print(JSON.toJSONString(shout)+"\n");
+                writer.flush();
+                writer.print(JSON.toJSONString(q)+"\n");
+                writer.flush();
+                ips.remove(0);
+            }
+            catch(Exception e){
+                e.printStackTrace();
+            }
+        }
         return null;
     }
 

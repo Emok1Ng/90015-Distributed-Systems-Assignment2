@@ -120,6 +120,13 @@ public class OutputParser {
             h.setType(Command.HELP.getCommand());
             return JSON.toJSONString(h);
         }
+        else if(command.equals(Command.SHOUT.getCommand()) && parts.length >= 2){
+            arg1 = parts[1];
+            Shout sh = new Shout();
+            sh.setType(Command.SHOUT.getCommand());
+            sh.setContent(arg1);
+            return JSON.toJSONString(sh);
+        }
         else{
             return null;
         }

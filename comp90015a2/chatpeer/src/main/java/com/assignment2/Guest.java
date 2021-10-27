@@ -5,12 +5,20 @@ public class Guest {
     private String identity;
     private String currentRoom;
     private Integer pPort;
+    private Integer iPort;
 
     public Guest() {
     }
 
-    public String getIdentity() {
+    public String getIp(){
         return identity + ":" + pPort;
+    }
+
+    public String getIdentity() {
+        if(identity.equals("localhost")){
+            return identity + ":" + pPort;
+        }
+        return identity + ":" + iPort;
     }
 
     public void setIdentity(String identity) {
@@ -31,5 +39,13 @@ public class Guest {
 
     public void setpPort(Integer pPort) {
         this.pPort = pPort;
+    }
+
+    public Integer getiPort() {
+        return iPort;
+    }
+
+    public void setiPort(Integer iPort) {
+        this.iPort = iPort;
     }
 }

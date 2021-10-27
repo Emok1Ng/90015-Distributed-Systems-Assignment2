@@ -60,6 +60,9 @@ public class InputParser {
                     this.manager.resetSocket();
                     return false;
                 }
+                else{
+                    System.out.printf("%s move from %s to %s.\n",identity,former,roomid);
+                }
                 if(identity.equals(this.identity)){
                     if(!roomid.equals("-") && !roomid.equals("--")){
                         this.currentRoom = roomid;

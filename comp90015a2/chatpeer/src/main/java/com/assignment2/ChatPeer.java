@@ -83,7 +83,6 @@ public class ChatPeer {
             }
         }
         catch(Exception e){
-            e.printStackTrace();
             System.out.println("[LocalChatPeer]: Closed......");
         }
     }
@@ -154,7 +153,7 @@ public class ChatPeer {
         private BufferedReader keyboard;
         private OutputParser outputParser;
         private Receiver receiver;
-        public Reader(Receiver receiver) throws IOException {
+        public Reader(Receiver receiver){
             this.receiver = receiver;
             this.keyboard = new BufferedReader(new InputStreamReader(System.in));
             this.outputParser = new OutputParser();
@@ -192,7 +191,6 @@ public class ChatPeer {
                 this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             }
             catch(Exception e){
-                e.printStackTrace();
                 this.reader = null;
             }
         }
@@ -208,6 +206,7 @@ public class ChatPeer {
                     }
                     catch (Exception e){
                         reader = null;
+                        manager.resetSocket();
                     }
                 }
             }

@@ -67,14 +67,14 @@ public class ChatPeer {
 
     public void handle() {
         ServerSocket serverSocket;
-        ExecutorService threadpool = Executors.newFixedThreadPool(100);
+        ExecutorService threadpool = Executors.newFixedThreadPool(200);
         try {
             System.out.println("[LocalChatPeer]:Waiting for connection......");
             serverSocket = new ServerSocket((pPort));
             System.out.printf("[LocalChatPeer]:Listening on port %d\n", pPort);
             Receiver receiver = new Receiver();
             threadpool.execute(receiver);
-            Reader reader = new Reader(receiver);
+            Reader reader = new Reader(receiver, serverSocket);
             threadpool.execute(reader);
             while(true){
                 Socket socket = serverSocket.accept();
@@ -153,14 +153,23 @@ public class ChatPeer {
         private BufferedReader keyboard;
         private OutputParser outputParser;
         private Receiver receiver;
-        public Reader(Receiver receiver){
+        private boolean readerAlive;
+        private ServerSocket serverSocket;
+
+        public Reader(Receiver receiver, ServerSocket serverSocket){
             this.receiver = receiver;
             this.keyboard = new BufferedReader(new InputStreamReader(System.in));
             this.outputParser = new OutputParser();
+            this.readerAlive = true;
+            this.serverSocket = serverSocket;
         }
+
+        public boolean getAlive(){
+            return this.readerAlive;
+        }
+
         @Override
         public void run() {
-            boolean readerAlive = true;
             while (readerAlive) {
                 try {
                     String message = keyboard.readLine();
@@ -170,8 +179,13 @@ public class ChatPeer {
                     } else {
                         System.out.println("[ERROR]Unable to process message due to Invalid command/Lack of arguments/Invalid roomid");
                     }
-                } catch (Exception e) {
+                } catch (Exception e1) {
                     readerAlive = false;
+                    try {
+                        this.serverSocket.close();
+                    } catch (Exception e2) {
+
+                    }
                 }
             }
         }

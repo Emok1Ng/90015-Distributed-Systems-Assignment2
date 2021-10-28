@@ -626,6 +626,7 @@ public class Manager {
         info1.setContent(JSON.toJSONString(rc1));
         info1.setContent(JSON.toJSONString(rc1));
         info1.addConnection(this.connectionHashMap.get(kicked));
+        this.guestHashMap.remove(this.connectionHashMap.get(kicked));
         infoList.add(info1);
         info2.setContent(JSON.toJSONString(rc2));
         info2.setContent(JSON.toJSONString(rc2));
@@ -663,7 +664,13 @@ public class Manager {
         try{
             String[] parts = ip.split(":");
             String hostName = parts[0];
-            Integer hostPort = Integer.valueOf(parts[1]);
+            Integer hostPort;
+            if(parts.length == 1){
+                hostPort = 4444;
+            }
+            else{
+                hostPort = Integer.valueOf(parts[1]);
+            }
             Socket socket;
             if(port.equals("")){
                 if(this.iPort == -1){

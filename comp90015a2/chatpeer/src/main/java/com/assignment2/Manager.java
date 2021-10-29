@@ -11,6 +11,7 @@ import com.assignment2.base.Message.C2S.Quit;
 import com.assignment2.base.Message.S2C.*;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
@@ -48,22 +49,39 @@ public class Manager {
     public void setPort(Integer iPort, Integer pPort){
         this.iPort = iPort;
         this.pPort = pPort;
+        this.myPeer = null;
         this.resetSocket();
     }
 
+    public void close(){
+        if(myPeer!=null){
+            Quit q = new Quit();
+            q.setType(Command.QUIT.getCommand());
+            sendMessage(JSON.toJSONString(q));
+        }
+        resetSocket();
+    }
+
     public void resetSocket(){
-        this.myPeer = null;
-        this.writer = null;
-        Guest g = new Guest();
-        g.setCurrentRoom("");
-        g.setIdentity("localhost");
-        g.setpPort(this.pPort);
-        g.setiPort(this.iPort);
-        this.identityList.add("localhost");
-        this.guestHashMap.put(null, g);
-        this.connectionHashMap.put(g,null);
-        ChatRoom emptyRoom = this.roomHashMap.get("");
-        emptyRoom.addMember(g);
+        try{
+            if(this.myPeer!=null){
+                this.myPeer.close();
+            }
+            this.myPeer = null;
+            this.writer = null;
+            Guest g = new Guest();
+            g.setCurrentRoom("");
+            g.setIdentity("localhost");
+            g.setpPort(this.pPort);
+            g.setiPort(this.iPort);
+            this.identityList.add("localhost");
+            this.guestHashMap.put(null, g);
+            this.connectionHashMap.put(g,null);
+            ChatRoom emptyRoom = this.roomHashMap.get("");
+            emptyRoom.addMember(g);
+        } catch (Exception e){
+
+        }
     }
 
     public void sendMessage(String message) {
@@ -678,12 +696,14 @@ public class Manager {
                 }
                 else{
                     socket = new Socket();
+                    socket.setReuseAddress(true);
                     socket.bind(new InetSocketAddress(iPort));
                     socket.connect(new InetSocketAddress(hostName, hostPort));
                 }
             }
             else{
                 socket = new Socket();
+                socket.setReuseAddress(true);
                 socket.bind(new InetSocketAddress(Integer.parseInt(port)));
                 socket.connect(new InetSocketAddress(hostName, hostPort));
             }

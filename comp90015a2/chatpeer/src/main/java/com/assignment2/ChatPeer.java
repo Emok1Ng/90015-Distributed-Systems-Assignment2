@@ -68,21 +68,31 @@ public class ChatPeer {
     public void handle() {
         ServerSocket serverSocket;
         ExecutorService threadpool = Executors.newFixedThreadPool(200);
+        ArrayList<ChatConnection> connections = new ArrayList<>();
+        Receiver receiver = null;
+        Reader reader;
         try {
             System.out.println("[LocalChatPeer]:Waiting for connection......");
             serverSocket = new ServerSocket((pPort));
             System.out.printf("[LocalChatPeer]:Listening on port %d\n", pPort);
-            Receiver receiver = new Receiver();
+            receiver = new Receiver();
             threadpool.execute(receiver);
-            Reader reader = new Reader(receiver, serverSocket);
+            reader = new Reader(receiver, serverSocket);
             threadpool.execute(reader);
             while(true){
                 Socket socket = serverSocket.accept();
                 ChatConnection connection = new ChatConnection(socket);
+                connections.add(connection);
                 threadpool.execute(connection);
             }
         }
         catch(Exception e){
+            threadpool.shutdown();
+            for(int i=0;i<connections.size();i++){
+                connections.get(i).close();
+            }
+            this.manager.close();
+            receiver.close();
             System.out.println("[LocalChatPeer]: Closed......");
         }
     }
@@ -120,19 +130,19 @@ public class ChatPeer {
                         connection_alive = false;
                     }
                 }catch (Exception e){
+                    System.out.println("123");
                     broadCast(manager.Analyze("{\"type\":\"quit\"}",this,null));
                     connection_alive  = false;
                 }
             }
-            close();
             this.close();
         }
 
         public void close() {
             try {
+                socket.close();
                 reader.close();
                 writer.close();
-                socket.close();
             }
             catch (IOException e){
                 e.printStackTrace();
@@ -194,21 +204,31 @@ public class ChatPeer {
     class Receiver implements Runnable{
         private volatile BufferedReader reader;
         private InputParser inputParser;
+        private boolean alive;
 
-        public Receiver() throws IOException {
+        public Receiver(){
             this.reader = null;
             this.inputParser = new InputParser(manager);
+            this.alive = true;
         }
 
         public void setReader(Socket socket) {
             try{
                 this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                this.alive = true;
             }
             catch(Exception e){
                 this.reader = null;
             }
         }
 
+        public void close() {
+            try{
+                this.reader.close();
+            } catch (Exception e){
+            }
+            this.alive = false;
+        }
         public void run() {
             while(true){
                 if(reader != null){
@@ -221,6 +241,14 @@ public class ChatPeer {
                     catch (Exception e){
                         reader = null;
                         manager.resetSocket();
+                        if(!alive) {
+                            break;
+                        }
+                    }
+                }
+                else{
+                    if(!alive) {
+                        break;
                     }
                 }
             }

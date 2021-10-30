@@ -521,7 +521,12 @@ public class Manager {
         Integer port;
         Socket socket;
         String myIp;
-        String toPrint = "";
+        String toPrint = "127.0.0.1:" + this.pPort + '\n';
+        ArrayList<HashMap> myRooms = this.getRooms();
+        for(int i=0;i<myRooms.size();i++){
+            HashMap myRoom = myRooms.get(i);
+            toPrint += myRoom.get("roomid") + " " + myRoom.get("count") + " users.\n";
+        }
         JSONObject json;
         if(myPeer!=null){
             ip = this.myPeer.getInetAddress().toString().split("/")[1];
@@ -575,7 +580,7 @@ public class Manager {
                 ips.remove(0);
             }
             catch(Exception e){
-                e.printStackTrace();
+                //e.printStackTrace();
             }
         }
         System.out.print(toPrint);
@@ -804,7 +809,7 @@ public class Manager {
                 ips.remove(0);
             }
             catch(Exception e){
-                e.printStackTrace();
+                //e.printStackTrace();
             }
         }
         return null;

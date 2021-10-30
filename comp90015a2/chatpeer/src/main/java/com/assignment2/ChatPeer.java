@@ -130,7 +130,6 @@ public class ChatPeer {
                         connection_alive = false;
                     }
                 }catch (Exception e){
-                    System.out.println("123");
                     broadCast(manager.Analyze("{\"type\":\"quit\"}",this,null));
                     connection_alive  = false;
                 }
@@ -145,7 +144,7 @@ public class ChatPeer {
                 writer.close();
             }
             catch (IOException e){
-                e.printStackTrace();
+                //e.printStackTrace();
             }
         }
 

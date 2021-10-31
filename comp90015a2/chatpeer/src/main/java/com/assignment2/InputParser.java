@@ -55,7 +55,7 @@ public class InputParser {
                     System.out.printf("%s move out from %s.\n",identity,former);
                 }
                 else if(roomid.equals("--")){
-                    System.out.println("You are kicked and the ip is banned.");
+                    System.out.println("Your ip is banned.");
                     this.currentRoom = "";
                     this.manager.resetSocket();
                     return false;

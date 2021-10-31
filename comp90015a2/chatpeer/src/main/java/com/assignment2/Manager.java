@@ -634,24 +634,22 @@ public class Manager {
             }
         }
         ArrayList<BroadcastInfo> infoList = new ArrayList<>();
-        BroadcastInfo info1 = new BroadcastInfo();
+        //BroadcastInfo info1 = new BroadcastInfo();
         BroadcastInfo info2 = new BroadcastInfo();
-        RoomChange rc1 = new RoomChange();
+        //RoomChange rc1 = new RoomChange();
         RoomChange rc2 = new RoomChange();
-        rc1.setType(MessageType.ROOMCHANGE.getType());
-        rc1.setFormer(kicked.getCurrentRoom());
-        rc1.setIdentity(identity);
-        rc1.setRoomid("--");
+        //rc1.setType(MessageType.ROOMCHANGE.getType());
+        //rc1.setFormer(kicked.getCurrentRoom());
+        //rc1.setIdentity(identity);
+        //rc1.setRoomid("--");
         rc2.setType(MessageType.ROOMCHANGE.getType());
         rc2.setFormer(kicked.getCurrentRoom());
         rc2.setIdentity(identity);
         rc2.setRoomid("-");
-        info1.setContent(JSON.toJSONString(rc1));
-        info1.setContent(JSON.toJSONString(rc1));
-        info1.addConnection(this.connectionHashMap.get(kicked));
+        //info1.setContent(JSON.toJSONString(rc1));
+        //info1.addConnection(this.connectionHashMap.get(kicked));
         this.guestHashMap.remove(this.connectionHashMap.get(kicked));
-        infoList.add(info1);
-        info2.setContent(JSON.toJSONString(rc2));
+        //infoList.add(info1);
         info2.setContent(JSON.toJSONString(rc2));
         this.roomHashMap.get(kicked.getCurrentRoom()).deleteMember(kicked);
         System.out.printf("%s is kicked.\n",identity);
@@ -662,6 +660,7 @@ public class Manager {
         }
         infoList.add(info2);
         this.identityList.remove(identity);
+        this.connectionHashMap.get(kicked).close();
         this.connectionHashMap.remove(kicked);
         return infoList;
     }

@@ -240,6 +240,7 @@ public class ChatPeer {
                     catch (Exception e){
                         reader = null;
                         manager.resetSocket();
+                        System.out.println("Connection is dropped.");
                         if(!alive) {
                             break;
                         }
